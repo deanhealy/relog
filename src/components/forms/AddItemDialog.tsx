@@ -47,14 +47,18 @@ export function AddItemDialog({ open, onOpenChange, mediaType }: AddItemDialogPr
     queryKey: ["search", mediaType, debounced],
     enabled: debounced.length >= 2,
     queryFn: async () => {
-      const res = await fetch(`/api/search/${mediaType}?q=${encodeURIComponent(debounced)}`);
+      const url = `/api/search/${mediaType}?q=${encodeURIComponent(debounced)}`;
+      console.debug("[relog] search", url);
+      const res = await fetch(url);
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string; tmdbStatus?: number };
         const msg =
           res.status === 401
             ? "Invalid TMDB key — check Vercel env var."
             : res.status === 404
-            ? "Not found."
+            ? "Search route not found — the deployment may be outdated. Redeploy on Vercel."
+            : res.status === 503
+            ? (body.error || "API key not configured on the server.")
             : body.error || `Search failed (${res.status})`;
         throw new Error(msg);
       }
@@ -142,8 +146,11 @@ export function AddItemDialog({ open, onOpenChange, mediaType }: AddItemDialogPr
                       Searching…
                     </div>
                   ) : search.isError ? (
-                    <div className="px-3 py-8 text-center text-xs text-red-400">
-                      Search failed. Check API keys in env.
+                    <div className="px-3 py-6 text-center text-xs text-red-400">
+                      <div className="font-medium">Search failed</div>
+                      <div className="mt-1 text-[11px] text-red-400/80">
+                        {search.error instanceof Error ? search.error.message : "Unknown error"}
+                      </div>
                     </div>
                   ) : !search.data || search.data.length === 0 ? (
                     <div className="px-3 py-8 text-center text-xs text-[var(--color-muted)]">
