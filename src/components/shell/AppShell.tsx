@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { TopBar, DesktopTopBar } from "@/components/shell/TopBar";
 import { MobileNav } from "@/components/shell/MobileNav";
 import { Attribution } from "@/components/shell/Attribution";
+import { GlobalShortcuts } from "@/components/shell/GlobalShortcuts";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const counts = useLiveQuery(() => itemsRepo.countByType(), [], undefined);
@@ -24,6 +25,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </footer>
       </div>
       <MobileNav />
+      <GlobalShortcuts />
     </div>
   );
 }

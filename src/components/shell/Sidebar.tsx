@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, Tv, Gamepad2, BookOpen, Library } from "lucide-react";
+import { Film, Tv, Gamepad2, BookOpen, Library, Settings as SettingsIcon } from "lucide-react";
 import type { MediaType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +65,20 @@ export function Sidebar({ counts }: SidebarProps) {
             );
           })}
         </ul>
+        <div className="mt-4 border-t border-[var(--color-border)] pt-3">
+          <Link
+            href="/settings"
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+              pathname?.startsWith("/settings")
+                ? "bg-[var(--color-surface-2)] text-[var(--color-text)]"
+                : "text-[var(--color-muted)] hover:bg-[var(--color-surface-2)]/60 hover:text-[var(--color-text)]"
+            )}
+          >
+            <SettingsIcon className="h-4 w-4" />
+            <span>Settings</span>
+          </Link>
+        </div>
       </nav>
       <div className="border-t border-[var(--color-border)] px-4 py-3 text-[10px] text-[var(--color-muted)]">
         Data stored locally in your browser.

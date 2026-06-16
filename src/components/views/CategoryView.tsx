@@ -90,6 +90,12 @@ export function CategoryView({ type }: { type: MediaType }) {
         <EmptyAddCard onClick={() => setAddOpen(true)} label="Add" />
       </CardGrid>
 
+      {items.length > 0 && filtered.length === 0 && (
+        <p className="mt-6 text-center text-sm text-[var(--color-muted)]">
+          No items in this filter. Try switching tabs above.
+        </p>
+      )}
+
       <AddItemDialog
         open={addOpen}
         onOpenChange={setAddOpen}

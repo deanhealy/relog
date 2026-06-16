@@ -25,6 +25,16 @@
     text-rendering: optimizeLegibility;
   }
 
+  html.light, html.light body {
+    --color-bg: #fafafa;
+    --color-surface: #ffffff;
+    --color-surface-2: #f4f4f5;
+    --color-border: #e4e4e7;
+    --color-muted: #71717a;
+    --color-text: #0a0a0a;
+    background: var(--color-bg);
+  }
+
   ::selection {
     background: var(--color-gold);
     color: #0a0a0a;

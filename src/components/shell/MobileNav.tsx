@@ -1,6 +1,6 @@
 "use client";
 
-import { Library, Film, Tv, Gamepad2, BookOpen } from "lucide-react";
+import { Library, Film, Tv, Gamepad2, BookOpen, Settings as SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,16 @@ export function MobileNav() {
           </Link>
         );
       })}
+      <Link
+        href="/settings"
+        className={cn(
+          "flex flex-col items-center gap-0.5 py-2 text-[10px]",
+          pathname?.startsWith("/settings") ? "text-[var(--color-gold-bright)]" : "text-[var(--color-muted)]"
+        )}
+      >
+        <SettingsIcon className="h-4 w-4" />
+        <span>Settings</span>
+      </Link>
     </nav>
   );
 }
