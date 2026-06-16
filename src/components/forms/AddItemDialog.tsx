@@ -48,7 +48,16 @@ export function AddItemDialog({ open, onOpenChange, mediaType }: AddItemDialogPr
     enabled: debounced.length >= 2,
     queryFn: async () => {
       const res = await fetch(`/api/search/${mediaType}?q=${encodeURIComponent(debounced)}`);
-      if (!res.ok) throw new Error("Search failed");
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string; tmdbStatus?: number };
+        const msg =
+          res.status === 401
+            ? "Invalid TMDB key — check Vercel env var."
+            : res.status === 404
+            ? "Not found."
+            : body.error || `Search failed (${res.status})`;
+        throw new Error(msg);
+      }
       return res.json();
     },
   });

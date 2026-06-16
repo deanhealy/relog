@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchTmdb } from "@/lib/api/tmdb";
+import { searchTmdb, TmdbError } from "@/lib/api/tmdb";
 import { searchRawg } from "@/lib/api/rawg";
 import { searchGoogleBooks } from "@/lib/api/googlebooks";
 import type { MediaType, SearchResult } from "@/lib/types";
@@ -48,6 +48,13 @@ export async function GET(
       headers: { "Cache-Control": "public, s-maxage=60" },
     });
   } catch (e) {
+    if (e instanceof TmdbError) {
+      // Pass through the real status so the client can distinguish 401/404/etc.
+      return NextResponse.json(
+        { error: e.message, tmdbStatus: e.status },
+        { status: e.status >= 400 && e.status < 600 ? e.status : 502 }
+      );
+    }
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Search failed" },
       { status: 500 }
