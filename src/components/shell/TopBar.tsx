@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Library } from "lucide-react";
+import { Library, Search } from "lucide-react";
 import Link from "next/link";
 
 const TITLES: Record<string, string> = {
@@ -40,6 +40,19 @@ export function DesktopTopBar() {
   return (
     <header className="sticky top-0 z-30 hidden h-14 items-center border-b border-[var(--color-border)] bg-[var(--color-bg)]/80 px-6 backdrop-blur md:flex">
       <h1 className="font-serif text-xl tracking-tight">{title}</h1>
+      <button
+        onClick={() => {
+          const evt = new CustomEvent("relog:open-palette");
+          window.dispatchEvent(evt);
+        }}
+        className="ml-auto inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-3 py-1.5 text-xs text-[var(--color-muted)] transition-colors hover:border-[var(--color-gold)] hover:text-[var(--color-text)]"
+      >
+        <Search className="h-3.5 w-3.5" />
+        Search
+        <kbd className="rounded border border-[var(--color-border)] bg-[var(--color-surface-2)] px-1 py-0.5 text-[9px]">
+          ⌘K
+        </kbd>
+      </button>
     </header>
   );
 }

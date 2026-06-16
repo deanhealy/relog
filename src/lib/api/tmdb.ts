@@ -45,6 +45,63 @@ function authHeader(key: string): { header?: Record<string, string>; query?: str
   return { query: `&api_key=${encodeURIComponent(trimmed)}` };
 }
 
+async function tmdbFetch(path: string, apiKey: string): Promise<unknown | null> {
+  const auth = authHeader(apiKey);
+  const url = `${TMDB_BASE}${path}${path.includes("?") ? "&" : "?"}${auth.query?.slice(1) ?? ""}`;
+  const res = await fetch(url, {
+    headers: { accept: "application/json", ...(auth.header ?? {}) },
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function fetchTmdbDetails(
+  mediaType: "film" | "tv",
+  tmdbId: string,
+  apiKey: string
+): Promise<{
+  overview?: string;
+  runtime?: number;
+  genres?: string[];
+  cast?: { name: string; character?: string }[];
+  director?: string;
+} | null> {
+  if (!apiKey) return null;
+  const prefix = mediaType === "film" ? "movie" : "tv";
+  const [detail, credits] = (await Promise.all([
+    tmdbFetch(`/${prefix}/${tmdbId}`, apiKey),
+    tmdbFetch(`/${prefix}/${tmdbId}/credits`, apiKey),
+  ])) as [
+    | {
+        overview?: string;
+        runtime?: number;
+        episode_run_time?: number[];
+        genres?: { name: string }[];
+        credits?: { cast?: { name: string; character?: string }[] };
+      }
+    | null,
+    | { cast?: { name: string; character?: string }[]; crew?: { job: string; name: string }[] }
+    | null
+  ];
+
+  if (!detail) return null;
+
+  const runtime =
+    detail.runtime ?? (Array.isArray(detail.episode_run_time) ? detail.episode_run_time[0] : undefined);
+
+  const castSrc = credits?.cast ?? detail.credits?.cast ?? [];
+  const director = credits?.crew?.find((c) => c.job === "Director")?.name;
+
+  return {
+    overview: detail.overview || undefined,
+    runtime,
+    genres: detail.genres?.map((g) => g.name).slice(0, 6),
+    cast: castSrc.slice(0, 8).map((c) => ({ name: c.name, character: c.character })),
+    director,
+  };
+}
+
 export async function searchTmdb(
   mediaType: "film" | "tv",
   query: string,

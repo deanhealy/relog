@@ -26,3 +26,36 @@ export async function searchRawg(query: string, apiKey: string): Promise<SearchR
       coverUrl: g.background_image!,
     }));
 }
+
+interface RawgDetail {
+  id: number;
+  name: string;
+  released?: string;
+  description?: string;
+  genres?: { name: string }[];
+  developers?: { name: string }[];
+  publishers?: { name: string }[];
+}
+
+export async function fetchRawgDetails(
+  rawgId: string,
+  apiKey: string
+): Promise<{
+  overview?: string;
+  genres?: string[];
+  released?: string;
+  director?: string;
+} | null> {
+  if (!apiKey) return null;
+  const res = await fetch(`${RAWG_BASE}/games/${rawgId}?key=${apiKey}`, {
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as RawgDetail;
+  return {
+    overview: json.description?.replace(/<[^>]+>/g, "").slice(0, 2000) || undefined,
+    genres: json.genres?.map((g) => g.name).slice(0, 6),
+    released: json.released,
+    director: json.developers?.[0]?.name,
+  };
+}

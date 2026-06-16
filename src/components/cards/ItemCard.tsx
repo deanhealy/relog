@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from "framer-motion";
-import { Star } from "lucide-react";
+import { Star, GripVertical } from "lucide-react";
 import Link from "next/link";
 import type { Item } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -57,7 +57,13 @@ function GlareLayer({ mx, my }: { mx: MotionValue<number>; my: MotionValue<numbe
   );
 }
 
-export function ItemCard({ item }: { item: Item }) {
+interface ItemCardProps {
+  item: Item;
+  dragHandle?: ReactNode;
+  disableTilt?: boolean;
+}
+
+export function ItemCard({ item, dragHandle, disableTilt }: ItemCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
@@ -66,6 +72,7 @@ export function ItemCard({ item }: { item: Item }) {
   const rotY = useSpring(useTransform(mx, [-0.5, 0.5], [-8, 8]), { stiffness: 220, damping: 18 });
 
   function handleMove(e: React.MouseEvent) {
+    if (disableTilt) return;
     const r = ref.current?.getBoundingClientRect();
     if (!r) return;
     mx.set((e.clientX - r.left) / r.width - 0.5);
@@ -85,15 +92,15 @@ export function ItemCard({ item }: { item: Item }) {
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
       style={{
-        rotateX: rotX,
-        rotateY: rotY,
+        rotateX: disableTilt ? 0 : rotX,
+        rotateY: disableTilt ? 0 : rotY,
         transformStyle: "preserve-3d",
         transformPerspective: 1000,
       }}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 200, damping: 22 }}
-      className="group"
+      className="group relative"
     >
       <Link
         href={href}
@@ -101,7 +108,7 @@ export function ItemCard({ item }: { item: Item }) {
       >
         <div className="pokemon-shine relative aspect-[3/5] w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg shadow-black/40">
           <CoverImage item={item} />
-          <GlareLayer mx={mx} my={my} />
+          {!disableTilt && <GlareLayer mx={mx} my={my} />}
 
           {item.status === "completed" && (
             <div className="absolute left-2 top-2 rounded-full bg-[var(--color-gold)]/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-bg)] backdrop-blur">
@@ -115,6 +122,12 @@ export function ItemCard({ item }: { item: Item }) {
               <span className="text-[10px] font-semibold text-[var(--color-gold-bright)] tabular-nums">
                 {item.rating}
               </span>
+            </div>
+          )}
+
+          {dragHandle && (
+            <div className="absolute bottom-12 right-2 z-10 opacity-0 transition-opacity group-hover:opacity-100">
+              {dragHandle}
             </div>
           )}
 
@@ -136,6 +149,22 @@ export function ItemCard({ item }: { item: Item }) {
         </div>
       </Link>
     </motion.div>
+  );
+}
+
+export function CardDragHandle(props: React.HTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      aria-label="Drag to reorder"
+      {...props}
+      className={cn(
+        "grid h-7 w-7 cursor-grab place-items-center rounded-full bg-black/60 text-white/70 backdrop-blur transition-colors hover:bg-black/80 hover:text-white active:cursor-grabbing",
+        props.className
+      )}
+    >
+      <GripVertical className="h-3.5 w-3.5" />
+    </button>
   );
 }
 

@@ -3,12 +3,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, Trash2, CheckCircle2, RotateCcw, ArrowLeft } from "lucide-react";
+import { Star, Trash2, CheckCircle2, RotateCcw, ArrowLeft, Loader2, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useQuery } from "@tanstack/react-query";
 import { itemsRepo } from "@/lib/db/repo";
-import type { Item } from "@/lib/types";
+import type { Item, ItemDetails } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 
@@ -28,17 +29,34 @@ export function ItemDetail({ id }: { id: string }) {
     return (
       <div className="grid min-h-[60vh] place-items-center text-sm text-[var(--color-muted)]">
         Not found.{" "}
-        <Link href="/films" className="ml-1 text-[var(--color-gold-bright)] hover:underline">
+        <Link href="/" className="ml-1 text-[var(--color-gold-bright)] hover:underline">
           Go back
         </Link>
       </div>
     );
   }
 
-  return <DetailBody item={item} onClose={() => router.back()} onDelete={async () => {
-    try { await itemsRepo.remove(item.id); success("Removed", item.title); router.back(); }
-    catch (e) { error("Could not remove", e instanceof Error ? e.message : ""); }
-  }} />;
+  return (
+    <DetailBody
+      item={item}
+      onClose={() => router.back()}
+      onDelete={async () => {
+        try {
+          await itemsRepo.remove(item.id);
+          success("Removed", item.title);
+          router.back();
+        } catch (e) {
+          error("Could not remove", e instanceof Error ? e.message : "");
+        }
+      }}
+    />
+  );
+}
+
+function typeToPlural(t: Item["mediaType"]): "films" | "tv" | "games" | "books" {
+  if (t === "tv") return "tv";
+  if (t === "game") return "games";
+  return t === "film" ? "films" : "books";
 }
 
 function DetailBody({ item, onClose, onDelete }: { item: Item; onClose: () => void; onDelete: () => void }) {
@@ -48,7 +66,26 @@ function DetailBody({ item, onClose, onDelete }: { item: Item; onClose: () => vo
   const { success } = useToast();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounced autosave of review
+  // Fetch details if not already cached
+  const detailsKey = typeToPlural(item.mediaType);
+  const hasDetails = item.details != null;
+  const cached = hasDetails;
+  const detailsQuery = useQuery<ItemDetails>({
+    queryKey: ["details", detailsKey, item.sourceId],
+    enabled: !cached,
+    queryFn: async () => {
+      const res = await fetch(`/api/details/${detailsKey}/${item.sourceId}`);
+      if (!res.ok) throw new Error("Details failed");
+      const data = (await res.json()) as ItemDetails;
+      await itemsRepo.update(item.id, {
+        details: data,
+        detailsFetchedAt: Date.now(),
+      });
+      return data;
+    },
+  });
+  const details = item.details ?? detailsQuery.data;
+
   useEffect(() => {
     if (review === (item.review ?? "")) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -60,7 +97,6 @@ function DetailBody({ item, onClose, onDelete }: { item: Item; onClose: () => vo
     };
   }, [review, item.id, item.review]);
 
-  // Save status / rating changes immediately
   useEffect(() => {
     if (status !== item.status) {
       itemsRepo.update(item.id, {
@@ -76,7 +112,14 @@ function DetailBody({ item, onClose, onDelete }: { item: Item; onClose: () => vo
     }
   }, [rating, item.id, item.rating]);
 
-  const cover = item.coverBlob ? URL.createObjectURL(item.coverBlob) : item.coverUrl;
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!item.coverBlob) return;
+    const u = URL.createObjectURL(item.coverBlob);
+    setCoverUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [item.coverBlob]);
+  const cover = coverUrl ?? item.coverUrl;
 
   return (
     <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
@@ -114,6 +157,8 @@ function DetailBody({ item, onClose, onDelete }: { item: Item; onClose: () => vo
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">
                       {item.year ?? "—"}
+                      {details?.runtime ? ` · ${formatRuntime(details.runtime, item.mediaType)}` : ""}
+                      {details?.pageCount ? ` · ${details.pageCount} pages` : ""}
                     </p>
                     <Dialog.Title asChild>
                       <h1 className="mt-1 font-serif text-2xl leading-tight tracking-tight md:text-3xl">
@@ -123,7 +168,62 @@ function DetailBody({ item, onClose, onDelete }: { item: Item; onClose: () => vo
                     {item.subtitle && (
                       <p className="mt-1 text-sm text-[var(--color-muted)]">{item.subtitle}</p>
                     )}
+                    {details && (details.director || (details.authors && details.authors.length > 0)) && (
+                      <p className="mt-1 text-xs text-[var(--color-muted)]">
+                        {details.director ? `Dir. ${details.director}` : ""}
+                        {details.authors && details.authors.length > 0 ? `By ${details.authors.join(", ")}` : ""}
+                        {details.publisher ? ` · ${details.publisher}` : ""}
+                      </p>
+                    )}
                   </div>
+
+                  {details?.genres && details.genres.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {details.genres.map((g) => (
+                        <span
+                          key={g}
+                          className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-0.5 text-[10px] text-[var(--color-muted)]"
+                        >
+                          {g}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {detailsQuery.isLoading && !details && (
+                    <div className="flex items-center gap-2 text-[10px] text-[var(--color-muted)]">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Loading details…
+                    </div>
+                  )}
+
+                  {details?.overview && (
+                    <p className="text-sm leading-relaxed text-[var(--color-text)]/90">
+                      {details.overview}
+                    </p>
+                  )}
+
+                  {details?.cast && details.cast.length > 0 && (
+                    <div>
+                      <div className="mb-1.5 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
+                        Cast
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {details.cast.map((c) => (
+                          <span
+                            key={c.name}
+                            className="rounded-full bg-[var(--color-bg)] px-2 py-0.5 text-[10px] text-[var(--color-text)]/80"
+                            title={c.character}
+                          >
+                            {c.name}
+                            {c.character && (
+                              <span className="ml-1 text-[var(--color-muted)]">as {c.character}</span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <div className="mb-2 text-xs uppercase tracking-wider text-[var(--color-muted)]">Rating</div>
@@ -148,7 +248,10 @@ function DetailBody({ item, onClose, onDelete }: { item: Item; onClose: () => vo
                   <div className="flex flex-wrap items-center gap-2 border-t border-[var(--color-border)] pt-4">
                     {status === "backlog" ? (
                       <button
-                        onClick={() => { setStatus("completed"); success("Marked complete", item.title); }}
+                        onClick={() => {
+                          setStatus("completed");
+                          success("Marked complete", item.title);
+                        }}
                         className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-gold-bright)] px-3 py-1.5 text-xs font-semibold text-[var(--color-bg)] transition-transform hover:scale-105 active:scale-95"
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" />
@@ -156,13 +259,22 @@ function DetailBody({ item, onClose, onDelete }: { item: Item; onClose: () => vo
                       </button>
                     ) : (
                       <button
-                        onClick={() => { setStatus("backlog"); }}
+                        onClick={() => setStatus("backlog")}
                         className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-surface)]"
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
                         Move back to backlog
                       </button>
                     )}
+                    <a
+                      href={externalUrl(item)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] text-[var(--color-muted)] hover:text-[var(--color-gold-bright)]"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      {item.source === "tmdb" ? "TMDB" : item.source === "rawg" ? "RAWG" : "Google Books"}
+                    </a>
                     <button
                       onClick={onDelete}
                       className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-1.5 text-xs text-[var(--color-muted)] transition-colors hover:border-red-500/30 hover:text-red-400"
@@ -180,6 +292,26 @@ function DetailBody({ item, onClose, onDelete }: { item: Item; onClose: () => vo
       </AnimatePresence>
     </Dialog.Root>
   );
+}
+
+function formatRuntime(minutes: number, type: Item["mediaType"]): string {
+  if (type === "tv") return `${minutes} min/ep`;
+  if (minutes < 60) return `${minutes}m`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
+function externalUrl(item: Item): string {
+  if (item.source === "tmdb") {
+    return item.mediaType === "tv"
+      ? `https://www.themoviedb.org/tv/${item.sourceId}`
+      : `https://www.themoviedb.org/movie/${item.sourceId}`;
+  }
+  if (item.source === "rawg") {
+    return `https://rawg.io/games/${item.sourceId}`;
+  }
+  return `https://books.google.com/books?id=${item.sourceId}`;
 }
 
 function StarPicker({

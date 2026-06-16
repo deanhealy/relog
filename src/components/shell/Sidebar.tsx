@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, Tv, Gamepad2, BookOpen, Library, Settings as SettingsIcon } from "lucide-react";
+import { Film, Tv, Gamepad2, BookOpen, Library, Settings as SettingsIcon, Home as HomeIcon } from "lucide-react";
 import type { MediaType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,25 @@ export function Sidebar({ counts }: SidebarProps) {
       </div>
       <nav className="flex-1 px-2 py-3">
         <ul className="flex flex-col gap-1">
+          <li>
+            <Link
+              href="/"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                pathname === "/"
+                  ? "bg-[var(--color-surface-2)] text-[var(--color-text)]"
+                  : "text-[var(--color-muted)] hover:bg-[var(--color-surface-2)]/60 hover:text-[var(--color-text)]"
+              )}
+            >
+              <HomeIcon
+                className={cn(
+                  "h-4 w-4 shrink-0",
+                  pathname === "/" && "text-[var(--color-gold-bright)]"
+                )}
+              />
+              <span>Home</span>
+            </Link>
+          </li>
           {ITEMS.map(({ type, label, href, icon: Icon }) => {
             const active = pathname?.startsWith(href);
             const count = counts?.[type];

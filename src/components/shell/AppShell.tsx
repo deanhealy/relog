@@ -7,6 +7,8 @@ import { TopBar, DesktopTopBar } from "@/components/shell/TopBar";
 import { MobileNav } from "@/components/shell/MobileNav";
 import { Attribution } from "@/components/shell/Attribution";
 import { GlobalShortcuts } from "@/components/shell/GlobalShortcuts";
+import { CommandPalette } from "@/components/shell/CommandPalette";
+import { InstallPrompt } from "@/components/shell/InstallPrompt";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const counts = useLiveQuery(() => itemsRepo.countByType(), [], undefined);
@@ -26,6 +28,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
       <MobileNav />
       <GlobalShortcuts />
+      <CommandPalette />
+      <InstallPrompt />
     </div>
   );
 }

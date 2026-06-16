@@ -17,6 +17,24 @@ export interface Item {
   status: Status;
   addedAt: number;
   completedAt?: number;
+  sortOrder?: number;
+  // Cached detail from external API
+  details?: ItemDetails;
+  detailsFetchedAt?: number;
+}
+
+export interface ItemDetails {
+  overview?: string;
+  runtime?: number; // minutes (film) or episode length
+  genres?: string[];
+  cast?: { name: string; character?: string }[];
+  director?: string;
+  // Game-specific
+  released?: string;
+  // Book-specific
+  authors?: string[];
+  pageCount?: number;
+  publisher?: string;
 }
 
 export interface SearchResult {

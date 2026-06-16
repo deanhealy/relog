@@ -45,3 +45,37 @@ export async function searchGoogleBooks(
   }
   return out;
 }
+
+export async function fetchGoogleBooksDetails(
+  volumeId: string,
+  apiKey: string | undefined
+): Promise<{
+  overview?: string;
+  authors?: string[];
+  pageCount?: number;
+  publisher?: string;
+  genres?: string[];
+} | null> {
+  const url = new URL(`${GB_BASE}/${volumeId}`);
+  if (apiKey) url.searchParams.set("key", apiKey);
+  const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+  if (!res.ok) return null;
+  const json = (await res.json()) as {
+    volumeInfo?: {
+      description?: string;
+      authors?: string[];
+      pageCount?: number;
+      publisher?: string;
+      categories?: string[];
+    };
+  };
+  const v = json.volumeInfo;
+  if (!v) return null;
+  return {
+    overview: v.description?.replace(/<[^>]+>/g, "").slice(0, 2000) || undefined,
+    authors: v.authors,
+    pageCount: v.pageCount,
+    publisher: v.publisher,
+    genres: v.categories?.slice(0, 6),
+  };
+}

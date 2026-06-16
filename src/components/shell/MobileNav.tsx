@@ -1,6 +1,6 @@
 "use client";
 
-import { Library, Film, Tv, Gamepad2, BookOpen, Settings as SettingsIcon } from "lucide-react";
+import { Home as HomeIcon, Film, Tv, Gamepad2, BookOpen, Settings as SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -16,15 +16,15 @@ const ITEMS: { type: MediaType; label: string; href: string; icon: React.Compone
 export function MobileNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-6 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur md:hidden">
       <Link
-        href="/films"
+        href="/"
         className={cn(
           "flex flex-col items-center gap-0.5 py-2 text-[10px]",
-          pathname?.startsWith("/films") ? "text-[var(--color-gold-bright)]" : "text-[var(--color-muted)]"
+          pathname === "/" ? "text-[var(--color-gold-bright)]" : "text-[var(--color-muted)]"
         )}
       >
-        <Library className="h-4 w-4" />
+        <HomeIcon className="h-4 w-4" />
         <span>Home</span>
       </Link>
       {ITEMS.map(({ type, label, href, icon: Icon }) => {
