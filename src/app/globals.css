@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0a0a0a;
+  --color-surface: #171717;
+  --color-surface-2: #1f1f1f;
+  --color-border: #2a2a2a;
+  --color-muted: #a1a1aa;
+  --color-text: #fafafa;
+  --color-gold: #d4a017;
+  --color-gold-bright: #f5c518;
+  --color-danger: #ef4444;
+  --color-success: #22c55e;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+}
+
+@layer base {
+  html, body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-gold);
+    color: #0a0a0a;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--color-bg); }
+  ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
+}
+
+@layer utilities {
+  .font-serif { font-family: var(--font-serif); }
+  .text-gold { color: var(--color-gold-bright); }
+  .bg-gold { background-color: var(--color-gold); }
+  .border-gold { border-color: var(--color-gold); }
+
+  .pokemon-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  .pokemon-shine::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 40%,
+      rgba(255, 255, 255, 0.12) 50%,
+      transparent 60%,
+      transparent 100%
+    );
+    transform: translateX(-100%);
+    transition: transform 0.7s ease;
+    pointer-events: none;
+    mix-blend-mode: color-dodge;
+  }
+  .pokemon-shine:hover::after {
+    transform: translateX(100%);
+  }
+}
